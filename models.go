@@ -5,6 +5,7 @@ type User struct {
 	Name  string `gorm:"not null" json:"name" binding:"required"`
 	Email string `gorm:"unique;not null" json:"email" binding:"required,email"`
 	Posts []Post `gorm:"foreignKey:UserID" json:"posts"`
+	Password string `gorm:"not null" json:"password" binding:"required"`
 }
 type Post struct {
 	ID           uint          `gorm:"primaryKey;autoIncrement" json:"id"`
