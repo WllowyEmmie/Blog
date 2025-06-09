@@ -2,16 +2,17 @@ package main
 
 import (
 	"net/http"
-	"strconv"
 	"sql-blog/middleware"
+	"strconv"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
 func SetupRoutes(router *gin.Engine, database *gorm.DB) {
-	protected:= router.Group("/api")
-	protected.Use(middleware.)
-	router.POST("/users", func(context *gin.Context) {
+	protected := router.Group("/api")
+	protected.Use(middleware.JWTMiddleware())
+	router.POST("/register", func(context *gin.Context) {
 		var newUser User
 
 		if err := context.ShouldBindJSON(&newUser); err != nil {
@@ -34,14 +35,18 @@ func SetupRoutes(router *gin.Engine, database *gorm.DB) {
 			return
 		}
 		var user User
-		if  err := database.Where("email = ?",loginData.Email).First(&user).Error; err != nil {
+		if err := database.Where("email = ?", loginData.Email).First(&user).Error; err != nil {
 			context.IndentedJSON(http.StatusNotFound, gin.H{"error": "User not found"})
-			return	
+			return
 		}
-		context.IndentedJSON(http.StatusOK, user)
+		token, err := middleware.GenerateJWT(user.ID)
+		if err != nil {
+			context.IndentedJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		context.IndentedJSON(http.StatusOK, gin.H{"token": token})
 	})
-	
-	router.POST("/users/multi", func(context *gin.Context) {
+
+	protected.POST("/users/multi", func(context *gin.Context) {
 		var newUsers []User
 		if err := context.ShouldBindJSON(&newUsers); err != nil {
 			context.IndentedJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -51,14 +56,14 @@ func SetupRoutes(router *gin.Engine, database *gorm.DB) {
 		}
 		context.IndentedJSON(http.StatusCreated, newUsers)
 	})
-	router.GET("/users", func(context *gin.Context) {
+	protected.GET("/users", func(context *gin.Context) {
 		var users []User
 		if err := database.Preload("Posts").Find(&users).Error; err != nil {
 			context.IndentedJSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		}
 		context.IndentedJSON(http.StatusOK, users)
 	})
-	router.GET("/users/:id", func(context *gin.Context) {
+	protected.GET("/users/:id", func(context *gin.Context) {
 		var user User
 		id := context.Param("id")
 		idInt, err := strconv.Atoi(id)
@@ -72,7 +77,7 @@ func SetupRoutes(router *gin.Engine, database *gorm.DB) {
 		}
 		context.IndentedJSON(http.StatusOK, user)
 	})
-	router.GET("/users/email/:email", func(context *gin.Context) {
+	protected.GET("/users/email/:email", func(context *gin.Context) {
 		var user User
 		email := context.Param("email")
 		if err := database.Preload("Posts").Where("email = ?", email).First(&user).Error; err != nil {
@@ -81,7 +86,7 @@ func SetupRoutes(router *gin.Engine, database *gorm.DB) {
 		}
 		context.IndentedJSON(http.StatusOK, user)
 	})
-	router.POST("/users/email/:email/post", func(context *gin.Context) {
+	protected.POST("/users/email/:email/post", func(context *gin.Context) {
 		var user User
 		email := context.Param("email")
 		if err := database.Where("email = ?", email).First(&user).Error; err != nil {
