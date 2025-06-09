@@ -42,6 +42,7 @@ func SetupRoutes(router *gin.Engine, database *gorm.DB) {
 		token, err := middleware.GenerateJWT(user.ID)
 		if err != nil {
 			context.IndentedJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
 		}
 		context.IndentedJSON(http.StatusOK, gin.H{"token": token})
 	})
