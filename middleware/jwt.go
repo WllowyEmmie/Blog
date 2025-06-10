@@ -6,7 +6,7 @@ import(
 	"os"
 )
 var jwtKey = []byte(os.Getenv("JWT_SECRET"))
-func GenerateJWT(userID uint) (string, error) {
+func GenerateJWT(userID string) (string, error) {
 	claims := jwt.MapClaims{
 		"sub": userID,
 		"exp": time.Now().Add(time.Hour * 72).Unix(), // Token valid for 72 hours

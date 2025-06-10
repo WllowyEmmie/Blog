@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 func JWTMiddleware() gin.HandlerFunc {
@@ -27,6 +28,23 @@ func JWTMiddleware() gin.HandlerFunc {
 			context.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 			return
 		}
-		context.Next()
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if !ok || !token.Valid {
+			context.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
+			return
+		}
+		userIDStr, ok := claims["sub"].(string)
+		if !ok {
+			context.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid subject claims"})
+			return
+		}
+		userIDInt, err := uuid.Parse(userIDStr)
+		if err != nil {
+				context.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid uuid format"})
+				return
+			}
+			context.Set("userID", userIDInt)
+			context.Next()
+		}
 	}
-}
+

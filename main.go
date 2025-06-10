@@ -21,7 +21,7 @@ func main() {
 	db := InitializeDB()
 	fmt.Println("Successfully connected to the database!")
 	MigrateModels(db)
-
+	db.AutoMigrate(&User{}, &Post{}, &Interaction{})
 	router := gin.Default()
 	SetupRoutes(router, db)
 	router.Run("localhost:9090")
