@@ -15,5 +15,5 @@ func InitializeDB() *gorm.DB {
 	return db
 }
 func MigrateModels(db *gorm.DB) {
-	db.AutoMigrate(&User{}, &Post{}, &Interaction{})
+	db.AutoMigrate(&User{}, &Post{}, &Reaction{}, &Comment{})
 }

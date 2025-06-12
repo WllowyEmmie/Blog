@@ -4,6 +4,7 @@ import (
 	// "database/sql"
 
 	"fmt"
+	"log"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -21,7 +22,11 @@ func main() {
 	db := InitializeDB()
 	fmt.Println("Successfully connected to the database!")
 	MigrateModels(db)
-	db.AutoMigrate(&User{}, &Post{}, &Interaction{})
+	err := db.AutoMigrate(&User{}, &Post{}, &Reaction{}, &Comment{})
+	if err != nil{
+		log.Fatalf("Migration failed %v", err)
+	}
+	fmt.Println("Migration Success")
 	router := gin.Default()
 	SetupRoutes(router, db)
 	router.Run("localhost:9090")
