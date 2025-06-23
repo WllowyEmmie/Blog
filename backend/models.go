@@ -9,16 +9,17 @@ type User struct {
 	Name     string    `gorm:"not null" json:"name" binding:"required"`
 	Email    string    `gorm:"unique;not null" json:"email" binding:"required,email"`
 	Posts    []Post    `gorm:"foreignKey:UserID" json:"posts"`
-	Password string    `gorm:"not null" json:"-" binding:"required"`
+	Password string    `gorm:"not null" json:"password" binding:"required"`
 	Comments []Comment `gorm:"foreignKey:UserID" json:"comments"`
 }
 type Post struct {
-	ID           uuid.UUID  `gorm:"type:uuid;primaryKey;" json:"id"`
-	Title        string     `gorm:"not null" json:"title" binding:"required"`
-	Body         string     `gorm:"type:text;not null" json:"body"`
+	ID        uuid.UUID  `gorm:"type:uuid;primaryKey;" json:"id"`
+	Title     string     `gorm:"not null" json:"title" binding:"required"`
+	Body      string     `gorm:"type:text;not null" json:"body"`
 	Reactions []Reaction `gorm:"foreignKey:PostID" json:"interactions"`
-	UserID       uuid.UUID  `gorm:"type:uuid;" json:"user_id"`
-	Comments     []Comment  `gorm:"foreignKey:PostID" json:"comments"`
+	UserID    uuid.UUID  `gorm:"type:uuid;" json:"user_id"`
+	Comments  []Comment  `gorm:"foreignKey:PostID" json:"comments"`
+	User      User       `gorm:"foreignKey:UserID" json:"user"`
 }
 type Reaction struct {
 	ID       uuid.UUID `gorm:"type:uuid;primaryKey;" json:"id"`
@@ -32,4 +33,5 @@ type Comment struct {
 	Body   string    `gorm:"type:text;not null" json:"body"`
 	UserID uuid.UUID `gorm:"type:uuid;" json:"user_id"`
 	PostID uuid.UUID `gorm:"type:uuid;" json:"post_id"`
+	User   User      `gorm:"foreignKey:UserID" json:"user"`
 }

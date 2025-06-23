@@ -3,7 +3,7 @@ package main
 import (
 	"net/http"
 	"sql-blog/middleware"
-
+	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -29,6 +29,7 @@ func SetupRoutes(router *gin.Engine, database *gorm.DB) {
 	protected := router.Group("/api")
 	protected.Use(middleware.JWTMiddleware())
 	//post beginning
+	//registering
 	router.POST("/register", func(context *gin.Context) {
 		var newUser User
 		if err := context.ShouldBindJSON(&newUser); err != nil {
@@ -41,6 +42,7 @@ func SetupRoutes(router *gin.Engine, database *gorm.DB) {
 		}
 		context.IndentedJSON(http.StatusCreated, newUser)
 	})
+	//login post
 	router.POST("/users/login", func(context *gin.Context) {
 		var loginData struct {
 			Email    string `json:"email" binding:"required,email"`
@@ -68,7 +70,7 @@ func SetupRoutes(router *gin.Engine, database *gorm.DB) {
 			"user":  user,
 			"token": token})
 	})
-
+	// creating a new post
 	protected.POST("/post", func(context *gin.Context) {
 		var newPost Post
 		userIDValue, ok := context.Get("userID")
@@ -96,6 +98,7 @@ func SetupRoutes(router *gin.Engine, database *gorm.DB) {
 			"message": "Successfully created Post",
 			"post":    newPost})
 	})
+	//Posting a comment on a post
 	protected.POST("/post/comment/:postID", func(context *gin.Context) {
 		var comment Comment
 		postIDStr := context.Param("postID")
@@ -133,6 +136,7 @@ func SetupRoutes(router *gin.Engine, database *gorm.DB) {
 
 	}) //post ending
 	//get beginning
+	//Getting all users
 	protected.GET("/users", func(context *gin.Context) {
 		var users []User
 		if err := database.Preload("Posts").Find(&users).Error; err != nil {
@@ -141,6 +145,42 @@ func SetupRoutes(router *gin.Engine, database *gorm.DB) {
 		}
 		context.IndentedJSON(http.StatusOK, users)
 	})
+	//getting all the post's comments
+	protected.GET("/comments/:postID", func(context *gin.Context) {
+		var comments []Comment
+		var postIDStr = context.Param("postID")
+		postID, err := uuid.Parse(postIDStr)
+		if err != nil {
+			context.IndentedJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		if err := database.Preload("User").Where("post_id = ?", postID).Find(&comments).Error; err != nil {
+			context.IndentedJSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+		context.IndentedJSON(http.StatusOK, gin.H{
+			"message":  "Successfully retreived comments",
+			"comments": comments,
+		})
+	})
+	//Getting all blog posts
+	protected.GET("/all-posts", func(context *gin.Context) {
+		var posts []Post
+		if err := database.Preload("Comments").Preload("Interactions").Preload("User").Find(&posts).Error; err != nil {
+			context.IndentedJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		if len(posts) == 0 {
+			context.IndentedJSON(http.StatusNotFound, gin.H{"message": "No posts found"})
+			return
+		}
+		context.IndentedJSON(http.StatusOK, gin.H{
+			"message": "Successfully retrieved posts",
+			"posts":   posts,
+		})
+	})
+	//Getting a user
 	protected.GET("/user", func(context *gin.Context) {
 		var user User
 		userIDValue, ok := context.Get("userID")
@@ -160,6 +200,26 @@ func SetupRoutes(router *gin.Engine, database *gorm.DB) {
 		}
 		context.IndentedJSON(http.StatusOK, user)
 	})
+	//Getting a posts's interaction
+	protected.GET("/reactions/:postID", func(context *gin.Context) {
+		postIDStr := context.Param("postID")
+		postID, err := uuid.Parse(postIDStr)
+		if err != nil {
+			context.IndentedJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		var reactions []Reaction
+		if err := database.Where("post_id = ?", postID).Find(&reactions).Error; err != nil {
+			context.IndentedJSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+		context.IndentedJSON(http.StatusOK, gin.H{
+			"message":   "Retrieved Reactions",
+			"reactions": reactions,
+		})
+	})
+	//Getting a user's Post
 	protected.GET("/posts", func(context *gin.Context) {
 		var user User
 		userIDValue, ok := context.Get("userID")
@@ -182,7 +242,7 @@ func SetupRoutes(router *gin.Engine, database *gorm.DB) {
 		})
 	}) //get ending
 	//patch beginning
-	protected.PATCH("/posts/:postID/edit", func(context *gin.Context) {
+	protected.PATCH("/posts/:postID", func(context *gin.Context) {
 		var post Post
 		postIDStr := context.Param("postID")
 		postID, err := uuid.Parse(postIDStr)
@@ -228,8 +288,8 @@ func SetupRoutes(router *gin.Engine, database *gorm.DB) {
 		})
 
 	})
-	protected.PATCH("/post/postID/reactions", func (context *gin.Context){
-	
+	protected.PATCH("/post/:postID/reactions", func(context *gin.Context) {
+
 		postIDStr := context.Param("postID")
 		postID, err := uuid.Parse(postIDStr)
 		if err != nil {
@@ -247,7 +307,7 @@ func SetupRoutes(router *gin.Engine, database *gorm.DB) {
 			return
 		}
 		var reactionData struct {
-			Action string
+			Action string `json:"action"`
 		}
 		if err := context.ShouldBindJSON(&reactionData); err != nil {
 			context.IndentedJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -255,28 +315,42 @@ func SetupRoutes(router *gin.Engine, database *gorm.DB) {
 		}
 		var reaction Reaction
 		if err := database.Where("post_id = ? AND user_id = ?", postID, userID).First(&reaction).Error; err != nil {
-			context.IndentedJSON(http.StatusNotFound, gin.H{"error": err.Error()})
-			return
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				reaction = Reaction{
+					PostID:   postID,
+					UserID:   userID,
+					Likes:    0,
+					Dislikes: 0,
+				}
+			}else{
+				context.IndentedJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			
 		}
-		switch reactionData.Action{
+		switch reactionData.Action {
 		case "like":
 			reaction.Likes++
 		case "dislike":
 			reaction.Dislikes++
+		case "not-like":
+			reaction.Likes--
+		case "not-dislike":
+			reaction.Dislikes--
 		default:
 			context.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Invalid Action"})
 			return
 		}
-		if err := database.Save(&reaction).Error; err != nil{
+		if err := database.Save(&reaction).Error; err != nil {
 			context.IndentedJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 		context.IndentedJSON(http.StatusOK, gin.H{
-			"message": "Reactions Updated",
+			"message":  "Reactions Updated",
 			"reaction": reaction,
 		})
-	})//patch ending
-	protected.DELETE("/post/:postID/delete", func(context * gin.Context){
+	}) //patch ending
+	protected.DELETE("/post/:postID/delete", func(context *gin.Context) {
 		postIDStr := context.Param("postID")
 		postID, err := uuid.Parse(postIDStr)
 		if err != nil {
@@ -285,7 +359,7 @@ func SetupRoutes(router *gin.Engine, database *gorm.DB) {
 		}
 		userIDValue, ok := context.Get("userID")
 		if !ok {
-			context.IndentedJSON(http.StatusUnauthorized, gin.H{"error":"User ID is not in context"})
+			context.IndentedJSON(http.StatusUnauthorized, gin.H{"error": "User ID is not in context"})
 			return
 		}
 		userID, ok := userIDValue.(uuid.UUID)
@@ -294,11 +368,11 @@ func SetupRoutes(router *gin.Engine, database *gorm.DB) {
 			return
 		}
 		var post Post
-		if err := database.Where("id = ? AND user_id = ?", postID , userID).First(&post).Error; err != nil {
+		if err := database.Where("id = ? AND user_id = ?", postID, userID).First(&post).Error; err != nil {
 			context.IndentedJSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
-		if err := database.Delete(&post).Error; err != nil{
+		if err := database.Delete(&post).Error; err != nil {
 			context.IndentedJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}

@@ -1,0 +1,15 @@
+body {
+  background-color: #f2f2f2e1;
+}
+
+.card {
+  border-radius: 12px;
+}
+
+#register-card {
+  width: 100%;
+  max-width: 400px;
+}
+.register-text{
+    color: #054f72;
+}
