@@ -1,3 +1,9 @@
+const registerBtn = document.getElementById("register-btn");
+    registerBtn.addEventListener("click", () => {
+        console.log("Register button clicked");
+        window.location.href = "/frontend/register/register.html";
+    });
+
 document.getElementById("loginForm").addEventListener("submit", async function (e) {
     e.preventDefault();
     const email = document.getElementById("email").value.trim();
@@ -14,7 +20,7 @@ document.getElementById("loginForm").addEventListener("submit", async function (
         alert("Please enter a valid email")
         return
     }
-
+    
     submitButton.disabled = true;
     submitButton.textContent = "Logging in...";
     try {

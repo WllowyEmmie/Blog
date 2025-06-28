@@ -39,6 +39,13 @@ async function fetchUser() {
     }
 
 }
+const signOutBtn = document.getElementById("signOut-btn");
+signOutBtn.addEventListener("click", () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("likeState");
+    localStorage.removeItem("dislikeState");
+    window.location.href = "/frontend/login/login.html"
+})
 userName.addEventListener("click", () => {
     window.location.href = "/frontend/dashboard/dashboard.html";
 });
