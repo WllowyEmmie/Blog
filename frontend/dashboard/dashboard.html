@@ -13,7 +13,8 @@
 <body>
     <div class="container py-4">
         <h2 class="text-center mb-4">Your Posts</h2>
-        <div class="d-flex justify-content-end mb-3">
+        <div class="d-flex justify-content-between mb-3">
+            <button class="btn btn-primary" id="home-btn">Home</button>
             <button class="btn btn-primary" id="add-post-btn">Add New Post</button>
         </div>
         <div class="row g-3" id="posts-container"></div>
@@ -32,8 +33,9 @@
                                 <input type="text" class="form-control" id="post-title" required autocomplete="off">
                             </div>
                             <div class="mb-3">
-                                <label for="post-body" class="form-label"required>Body</label>
-                                <textarea class="form-control" id="post-body" rows="4" required autocomplete="off"></textarea>
+                                <label for="post-body" class="form-label" required>Body</label>
+                                <textarea class="form-control" id="post-body" rows="4" required
+                                    autocomplete="off"></textarea>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -45,7 +47,7 @@
             </div>
         </div>
     </div>
-     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"></script>
     <script src="app.js"></script>
 </body>
 

@@ -2,7 +2,7 @@ const postsContainer = document.getElementById("posts-container");
 const postForm = document.getElementById("post-form");
 const postModal = new bootstrap.Modal(document.getElementById("post-modal"));
 const addBtn = document.getElementById("add-post-btn")
-
+const homeBtn = document.getElementById("home-btn")
 const titleInput = document.getElementById("post-title");
 const bodyInput = document.getElementById("post-body")
 const postIDInput = document.getElementById("post-id")
@@ -36,7 +36,7 @@ function renderPosts() {
     postsContainer.innerHTML = "";
     posts.forEach(post => {
         const col = document.createElement("div");
-        col.className = "col-md-4";
+        col.className = "col-lg-4";
         col.innerHTML = `
         <div class = "card shadow-sm">
             <div class = "card-body">
@@ -66,6 +66,9 @@ addBtn.addEventListener("click", () => {
     bodyInput.value = ""
     postModal.show();
 });
+homeBtn.addEventListener("click", ()=>{
+    window.location.href ="/frontend/main/main.html"
+})
 postForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const title = titleInput.value.trim();
@@ -73,10 +76,11 @@ postForm.addEventListener("submit", async (e) => {
     const id = postIDInput.value;
 
     const payload = { title, body };
-    const url = id ? `${API_BASE}/${id}/edit` : API_BASE2;
+    const url = id ? `${API_BASE}/${id}` : API_BASE2;
     const method = id ? "PATCH" : "POST";
-
+    console.log("Submitting payload: ", payload)
     try {
+            console.log("Submitting payload: ", payload)
         const response = await fetch(url, {
             method,
             headers: {
@@ -85,7 +89,9 @@ postForm.addEventListener("submit", async (e) => {
             },
             body: JSON.stringify(payload)
         });
+        const responseBOdy = await response.json();
         if (!response.ok) {
+            console.log("Server replies :", responseBOdy);
             throw new Error("Save failed");
         }
         postModal.hide();
@@ -118,7 +124,7 @@ async function deletePost(id) {
 }
 
 function editPost(id) {
-    const post = posts.find(p => p.id === id);
+    const post = posts.find(p => p.id == id);
     if (!post)
         return;
     postIDInput.value = post.id;

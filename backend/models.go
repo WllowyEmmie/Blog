@@ -16,7 +16,7 @@ type Post struct {
 	ID        uuid.UUID  `gorm:"type:uuid;primaryKey;" json:"id"`
 	Title     string     `gorm:"not null" json:"title" binding:"required"`
 	Body      string     `gorm:"type:text;not null" json:"body"`
-	Reactions []Reaction `gorm:"foreignKey:PostID" json:"interactions"`
+	Reactions []Reaction `gorm:"foreignKey:PostID" json:"reactions"`
 	UserID    uuid.UUID  `gorm:"type:uuid;" json:"user_id"`
 	Comments  []Comment  `gorm:"foreignKey:PostID" json:"comments"`
 	User      User       `gorm:"foreignKey:UserID" json:"user"`
